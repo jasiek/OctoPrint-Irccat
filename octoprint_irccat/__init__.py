@@ -1,40 +1,27 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-### (Don't forget to remove me)
-# This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
-# as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
-# defining your plugin as a template plugin, settings and asset plugin. Feel free to add or remove mixins
-# as necessary.
-#
-# Take a look at the documentation on what other plugin mixins are available.
-
 import octoprint.plugin
+import octoprint.events
 
 class IrccatPlugin(octoprint.plugin.SettingsPlugin,
-                   octoprint.plugin.AssetPlugin,
                    octoprint.plugin.TemplatePlugin):
-
-	##~~ SettingsPlugin mixin
 
 	def get_settings_defaults(self):
 		return dict(
-			# put your plugin's default settings here
+			host="127.0.0.1",
+                        port=12345,
+                        events=["PrintDone"]
 		)
 
-	##~~ AssetPlugin mixin
-
-	def get_assets(self):
-		# Define your plugin's asset files to automatically include in the
-		# core UI here.
-		return dict(
-			js=["js/irccat.js"],
-			css=["css/irccat.css"],
-			less=["less/irccat.less"]
-		)
-
-	##~~ Softwareupdate hook
-
+        def get_template_vars(self):
+                return dict(
+                        host=self._settings.get(["host"]),
+                        port=self._settings.get(["port"]),
+                        selectedEvents=self._settings.get(["events"]),
+                        possibleEvents=octoprint.events.all_events()
+                )
+                
 	def get_update_information(self):
 		# Define the configuration for your plugin to use with the Software Update
 		# Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
@@ -55,10 +42,6 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
 			)
 		)
 
-
-# If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
-# ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
-# can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
 __plugin_name__ = "Irccat Plugin"
 
 def __plugin_load__():

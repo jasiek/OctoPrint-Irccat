@@ -1,0 +1,27 @@
+<form class="form-horizontal">
+  <div class="control-group">
+    <label class="control-label">{{ _('Host') }}</label>
+    <div class="controls">
+      <input type="text" class="input-block-level" data-bind="value: settings.plugins.irccat.host">
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label">{{ _('Port') }}</label>
+    <div class="controls">
+      <input type="text" class="input-block-level" data-bind="value: settings.plugins.irccat.port">
+    </div>
+  </div>
+  <div class="control-group">
+    <label class="control-label">{{ _('Events') }}</label>
+    <div class="controls">
+      <ul>
+      {% for event in plugin_irccat_possibleEvents %}
+      <div>
+        <input type="checkbox" class="input-block-level" value="{{ event }}" data-bind="checked: settings.plugins.irccat.events" value="{{event}}">
+      </input>
+        {{ event }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</form>
