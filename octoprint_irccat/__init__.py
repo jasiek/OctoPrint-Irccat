@@ -3,23 +3,22 @@ from __future__ import absolute_import
 
 import octoprint.plugin
 import octoprint.events
+import socket
 
 class IrccatPlugin(octoprint.plugin.SettingsPlugin,
-                   octoprint.plugin.TemplatePlugin):
+                   octoprint.plugin.TemplatePlugin,
+                   octoprint.plugin.EventHandlerPlugin):
 
 	def get_settings_defaults(self):
 		return dict(
 			host="127.0.0.1",
                         port=12345,
-                        events=["PrintDone"]
 		)
 
         def get_template_vars(self):
                 return dict(
                         host=self._settings.get(["host"]),
                         port=self._settings.get(["port"]),
-                        selectedEvents=self._settings.get(["events"]),
-                        possibleEvents=octoprint.events.all_events()
                 )
                 
 	def get_update_information(self):
@@ -41,6 +40,39 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
 				pip="https://github.com/jasiek/OctoPrint-Irccat/archive/{target_version}.zip"
 			)
 		)
+
+        def on_event(self, event, payload):
+                if event == octoprint.events.Events.PRINT_STARTED:
+                        self.handle_print_started(payload)
+                elif event == octoprint.events.Events.PRINT_DONE:
+                        self.handle_print_done(payload)
+
+        def handle_print_started(self, payload):
+                metadata = self._file_manager.get_metadata(payload["origin"], payload["file"])
+                printTime = metadata["analysis"]["estimatedPrintTime"]
+                filamentLength = metadata["analysis"]["tool0"]["length"]
+
+                printCost = 1.50 * printTime / 60
+                filamentCost = filamentLength * 0.20
+
+                self.send_to_irccat(hostname() + ' started printing, estimated print time: ' + format_time(printTime) + ', estimated cost: ' + str(printCost + filamentCost)
+                
+        def handle_print_done(self, payload):
+                metadata = self._file_manager.get_metadata(payload["origin"], payload["file"])
+                print metadata
+
+        def hostname(self):
+                if not self._hostname:
+                        self._hostname = socket.gethostname()
+                return self._hostname
+
+        def send_to_irccat(self, message):
+                print message
+                return
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect((self._settings.get(["host"]), self._settings.get(["port"])))
+                s.send("#london-hack-space-dev ", message)
+                s.close()
 
 __plugin_name__ = "Irccat Plugin"
 
