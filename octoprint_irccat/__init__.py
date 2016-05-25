@@ -5,6 +5,10 @@ import octoprint.plugin
 import octoprint.events
 import socket
 
+COST_PER_HOUR = 1.50
+COST_PER_METER = 0.2
+CURRENCY = '£'
+
 class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                    octoprint.plugin.TemplatePlugin,
                    octoprint.plugin.EventHandlerPlugin):
@@ -52,16 +56,16 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 printTime = metadata["analysis"]["estimatedPrintTime"]
                 filamentLength = metadata["analysis"]["filament"]["tool0"]["length"]
 
-                print printTime, filamentLength
-                
-                printCost = 1.50 * printTime / 3600
-                filamentCost = filamentLength / 1000 * 0.20
-
-                self.send_to_irccat(self.hostname() + ' started printing, estimated print time: ' + self.formatTime(printTime) + ', estimated cost: ' + self.formatAmount(printCost + filamentCost))
+                total_cost = self.print_cost(printTime) + self.filament_cost(filamentLength)
+                self.send_to_irccat(self.hostname() + ' started printing, estimated print time: ' + self.format_time(printTime) + ', estimated cost: ' + self.format_amount(total_cost))
                 
         def handle_print_done(self, payload):
                 metadata = self._file_manager.get_metadata(payload["origin"], payload["file"])
-                print metadata
+                printTime = metadata['statistics']['lastPrintTime']['_default']
+                filamentLength = metadata["analysis"]["filament"]["tool0"]["length"]
+
+                total_cost = self.print_cost(printTime) + self.filament_cost(filamentLength)
+                self.send_to_irccat(self.hostname() + ' finished printing, actual print time: ' + self.format_time(printTime) + ', actual cost: ' + self.format_amount(total_cost))
 
         def hostname(self):
                 if not hasattr(self, '_hostname'):
@@ -76,23 +80,40 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 s.send("#london-hack-space-dev ", message)
                 s.close()
 
-        def formatTime(self, seconds):
+        def print_cost(self, print_time):
+                return COST_PER_HOUR / 3600 * print_time
+
+        def filament_cost(self, filament_length):
+                return COST_PER_METER / 1000 * filament_length
+
+        def format_time(self, seconds):
+                seconds = int(seconds)
+                
+                days = seconds / 86400
+                hours = seconds / 3600 % 24
+                minutes = seconds / 60 % 3600
+                seconds = seconds % 60
+
                 output = []
-                output.append(int(seconds % 60))
-                output.append('s')
-                minutes = int(seconds / 60)
-                output.append(minutes % 60)
-                output.append('m')
-                hours = int(minutes / 60)
-                output.append(hours % 24)
-                output.append('h')
-                days = int(hours / 24)
-                output.append(days)
-                output.append('d')
+                if days > 0:
+                        output.append(days)
+                        output.append('d')
+                if hours > 0:
+                        output.append(hours)
+                        output.append('h')
+                if minutes > 0:
+                        output.append(minutes)
+                        output.append('m')
+                if seconds > 0:
+                        output.append(seconds)
+                        output.append('s')
                 return ''.join([str(x) for x in output])
 
-        def formatAmount(self, amount):
-                return "£%5.2f" % amount
+        def format_amount(self, amount):
+                return CURRENCY + "%5.2f" % amount
+
+
+
 __plugin_name__ = "Irccat Plugin"
 
 def __plugin_load__():
