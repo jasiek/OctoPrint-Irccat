@@ -5,10 +5,6 @@ import octoprint.plugin
 import octoprint.events
 import socket
 
-COST_PER_HOUR = 1.50
-COST_PER_METER = 0.2
-CURRENCY = '£'
-
 class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                    octoprint.plugin.TemplatePlugin,
                    octoprint.plugin.EventHandlerPlugin):
@@ -17,12 +13,18 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
 		return dict(
 			host="127.0.0.1",
                         port=12345,
+                        cost_per_hour=1.50,
+                        cost_per_meter=0.2,
+                        currency='£'
 		)
 
         def get_template_vars(self):
                 return dict(
                         host=self._settings.get(["host"]),
                         port=self._settings.get(["port"]),
+                        cost_per_hour=self._settings.get(["cost_per_hour"]),
+                        cost_per_meter=self._settings.get(["cost_per_meter"]),
+                        currency=self._settings.get(["currency"])
                 )
                 
 	def get_update_information(self):
@@ -81,17 +83,19 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 s.close()
 
         def print_cost(self, print_time):
-                return COST_PER_HOUR / 3600 * print_time
+                cost_per_hour = self._settings.get(["cost_per_hour"]) or 0
+                return cost_per_hour / 3600 * print_time
 
         def filament_cost(self, filament_length):
-                return COST_PER_METER / 1000 * filament_length
+                cost_per_meter = self._settings.get(["cost_per_meter"]) or 0
+                return cost_per_meter / 1000 * filament_length
 
         def format_time(self, seconds):
                 seconds = int(seconds)
                 
                 days = seconds / 86400
                 hours = seconds / 3600 % 24
-                minutes = seconds / 60 % 3600
+                minutes = seconds / 60 % 60
                 seconds = seconds % 60
 
                 output = []
@@ -110,7 +114,7 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 return ''.join([str(x) for x in output])
 
         def format_amount(self, amount):
-                return CURRENCY + "%5.2f" % amount
+                return self._settings.get(["currency"]) + "%5.2f" % amount
 
 
 
