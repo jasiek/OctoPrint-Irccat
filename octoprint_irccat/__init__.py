@@ -50,19 +50,21 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
         def handle_print_started(self, payload):
                 metadata = self._file_manager.get_metadata(payload["origin"], payload["file"])
                 printTime = metadata["analysis"]["estimatedPrintTime"]
-                filamentLength = metadata["analysis"]["tool0"]["length"]
+                filamentLength = metadata["analysis"]["filament"]["tool0"]["length"]
 
-                printCost = 1.50 * printTime / 60
-                filamentCost = filamentLength * 0.20
+                print printTime, filamentLength
+                
+                printCost = 1.50 * printTime / 3600
+                filamentCost = filamentLength / 1000 * 0.20
 
-                self.send_to_irccat(hostname() + ' started printing, estimated print time: ' + format_time(printTime) + ', estimated cost: ' + str(printCost + filamentCost)
+                self.send_to_irccat(self.hostname() + ' started printing, estimated print time: ' + self.formatTime(printTime) + ', estimated cost: ' + self.formatAmount(printCost + filamentCost))
                 
         def handle_print_done(self, payload):
                 metadata = self._file_manager.get_metadata(payload["origin"], payload["file"])
                 print metadata
 
         def hostname(self):
-                if not self._hostname:
+                if not hasattr(self, '_hostname'):
                         self._hostname = socket.gethostname()
                 return self._hostname
 
@@ -74,6 +76,23 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 s.send("#london-hack-space-dev ", message)
                 s.close()
 
+        def formatTime(self, seconds):
+                output = []
+                output.append(int(seconds % 60))
+                output.append('s')
+                minutes = int(seconds / 60)
+                output.append(minutes % 60)
+                output.append('m')
+                hours = int(minutes / 60)
+                output.append(hours % 24)
+                output.append('h')
+                days = int(hours / 24)
+                output.append(days)
+                output.append('d')
+                return ''.join([str(x) for x in output])
+
+        def formatAmount(self, amount):
+                return "£%5.2f" % amount
 __plugin_name__ = "Irccat Plugin"
 
 def __plugin_load__():
