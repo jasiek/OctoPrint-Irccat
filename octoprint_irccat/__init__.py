@@ -17,16 +17,11 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                         cost_per_meter=0.2,
                         currency='£'
 		)
+        def get_template_configs(self):
+                return [
+                        dict(type="settings", custom_bindings=False)
+                ]
 
-        def get_template_vars(self):
-                return dict(
-                        host=self._settings.get(["host"]),
-                        port=self._settings.get(["port"]),
-                        cost_per_hour=self._settings.get(["cost_per_hour"]),
-                        cost_per_meter=self._settings.get(["cost_per_meter"]),
-                        currency=self._settings.get(["currency"])
-                )
-                
 	def get_update_information(self):
 		# Define the configuration for your plugin to use with the Software Update
 		# Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
@@ -84,11 +79,11 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
 
         def print_cost(self, print_time):
                 cost_per_hour = self._settings.get(["cost_per_hour"]) or 0
-                return cost_per_hour / 3600 * print_time
+                return float(cost_per_hour) / 3600 * print_time
 
         def filament_cost(self, filament_length):
                 cost_per_meter = self._settings.get(["cost_per_meter"]) or 0
-                return cost_per_meter / 1000 * filament_length
+                return float(cost_per_meter) / 1000 * filament_length
 
         def format_time(self, seconds):
                 seconds = int(seconds)
