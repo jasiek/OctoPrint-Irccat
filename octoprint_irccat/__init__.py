@@ -17,6 +17,7 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                         cost_per_meter=0.2,
                         currency='£'
 		)
+
         def get_template_configs(self):
                 return [
                         dict(type="settings", custom_bindings=False)
@@ -77,13 +78,18 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 s.send("#london-hack-space-dev ", message)
                 s.close()
 
-        def print_cost(self, print_time):
-                cost_per_hour = self._settings.get(["cost_per_hour"]) or 0
-                return float(cost_per_hour) / 3600 * print_time
 
+        def _cost_per_hour(self):
+                return self._settings.get(["cost_per_hour"]) or 0
+        
+        def print_cost(self, print_time):
+                return float(self._cost_per_hour()) / 3600 * print_time
+
+        def _cost_per_meter(self):
+                return self._settings.get(["cost_per_meter"]) or 0
+        
         def filament_cost(self, filament_length):
-                cost_per_meter = self._settings.get(["cost_per_meter"]) or 0
-                return float(cost_per_meter) / 1000 * filament_length
+                return float(self._cost_per_meter()) / 1000 * filament_length
 
         def format_time(self, seconds):
                 seconds = int(seconds)
