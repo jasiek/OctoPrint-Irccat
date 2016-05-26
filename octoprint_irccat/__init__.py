@@ -112,6 +112,8 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 if seconds > 0:
                         output.append(seconds)
                         output.append('s')
+                if output == [] and seconds == 0:
+                        output.append('0s')
                 return ''.join([str(x) for x in output])
 
         def format_amount(self, amount):

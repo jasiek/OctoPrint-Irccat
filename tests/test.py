@@ -8,11 +8,18 @@ import pytest_mock
 
 import socket
 import octoprint.events
+import octoprint.settings
 import octoprint_irccat
+
+# Hack needed to instantiate Settings on a Mac
+octoprint.settings._default_basedir = lambda _ : '/tmp'
 
 @pytest.fixture
 def subject():
-    return octoprint_irccat.IrccatPlugin()
+    instance = octoprint_irccat.IrccatPlugin()
+    instance._settings = octoprint.settings.Settings()
+    instance.initialize()
+    return instance
 
 def test_default_settings():
     expected_settings = dict(
@@ -37,10 +44,27 @@ def test_on_event(mocker):
 def test_hostname():
     assert socket.gethostname() == subject().hostname()
     
-def test_print_cost():
-    assert subject().print_cost(3600) == 1.50
-    assert subject().print_cost(7200) == 3.00
+def test_print_cost(mocker):
+    plugin = subject()
+    mocker.patch.object(plugin, '_cost_per_hour', new_callable=lambda : lambda : 1.50)
+    assert plugin.print_cost(3600) == 1.50
+    assert plugin.print_cost(7200) == 3.00
 
-def test_filament_cost():
-    assert subject().filament_cost(1000) == 0.2
-    assert subject().filament_cost(2000) == 0.4
+def test_filament_cost(mocker):
+    plugin = subject()
+    mocker.patch.object(plugin, '_cost_per_meter', new_callable=lambda : lambda : 0.2)
+    assert plugin.filament_cost(1000) == 0.2
+    assert plugin.filament_cost(2000) == 0.4
+
+def test_format_time():
+    plugin = subject()
+    assert plugin.format_time(0) == '0s'
+    assert plugin.format_time(59) == '59s'
+    assert plugin.format_time(60) == '1m'
+    assert plugin.format_time(61) == '1m1s'
+    assert plugin.format_time(3599) == '59m59s'
+    assert plugin.format_time(3600) == '1h'
+    assert plugin.format_time(3601) == '1h1s'
+    assert plugin.format_time(24 * 3600 - 1) == '23h59m59s'
+    assert plugin.format_time(24 * 3600) == '1d'
+    assert plugin.format_time(24 * 3600 + 1) == '1d1s'
