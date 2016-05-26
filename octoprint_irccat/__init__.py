@@ -4,10 +4,14 @@ from __future__ import absolute_import
 import octoprint.plugin
 import octoprint.events
 import socket
+import logging
 
 class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                    octoprint.plugin.TemplatePlugin,
                    octoprint.plugin.EventHandlerPlugin):
+
+        def __init__(self):
+                self._logger = logging.getLogger("octoprint.plugins.irccat")
 
 	def get_settings_defaults(self):
 		return dict(
@@ -71,13 +75,13 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 return self._hostname
 
         def send_to_irccat(self, message):
-                print message
-                return
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect((self._settings.get(["host"]), self._settings.get(["port"])))
-                s.send("#london-hack-space-dev ", message)
-                s.close()
-
+                try:
+                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        s.connect((self._settings.get(["host"]), self._settings.get(["port"])))
+                        s.send("#london-hack-space-dev ", message)
+                        s.close()
+                except (socket.error, socket.herror, socket.gaierror, socket.timeout) as e:
+                        self._logger.error(e.message)
 
         def _cost_per_hour(self):
                 return self._settings.get(["cost_per_hour"]) or 0

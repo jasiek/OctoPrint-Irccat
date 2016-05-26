@@ -68,3 +68,14 @@ def test_format_time():
     assert plugin.format_time(24 * 3600 - 1) == '23h59m59s'
     assert plugin.format_time(24 * 3600) == '1d'
     assert plugin.format_time(24 * 3600 + 1) == '1d1s'
+
+def test_sending_fails(mocker):
+    plugin = subject()
+    mocker.patch.object(plugin._logger, 'error')
+
+    for exc in [socket.error, socket.herror, socket.gaierror, socket.timeout]:
+        def raiser():
+            raise exc(1, "something bad happened")
+        mocker.patch('socket.socket', new_callable=raiser)
+        plugin.send_to_irccat('irrelevant')
+        plugin._logger.error.assert_called_with("something bad happened")
