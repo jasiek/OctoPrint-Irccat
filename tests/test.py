@@ -74,8 +74,9 @@ def test_sending_fails(mocker):
     mocker.patch.object(plugin._logger, 'error')
 
     for exc in [socket.error, socket.herror, socket.gaierror, socket.timeout]:
-        def raiser():
-            raise exc(1, "something bad happened")
-        mocker.patch('socket.socket', new_callable=raiser)
+        e = exc(1, "something bad happened")
+        def raiser(_, __):
+            raise e
+        mocker.patch('socket.socket', new_callable=lambda : raiser)
         plugin.send_to_irccat('irrelevant')
-        plugin._logger.error.assert_called_with("something bad happened")
+        plugin._logger.error.assert_called_with(repr(e))

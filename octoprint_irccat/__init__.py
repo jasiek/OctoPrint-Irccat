@@ -81,7 +81,7 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                         s.send("#london-hack-space-dev ", message)
                         s.close()
                 except (socket.error, socket.herror, socket.gaierror, socket.timeout) as e:
-                        self._logger.error(e.message)
+                        self._logger.error(repr(e))
 
         def _cost_per_hour(self):
                 return self._settings.get(["cost_per_hour"]) or 0
