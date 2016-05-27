@@ -27,7 +27,8 @@ def test_default_settings():
         port=12345,
         cost_per_hour=1.50,
         cost_per_meter=0.2,
-        currency='£'
+        currency='GBP',
+        channel_or_user='#*'
     )
     assert expected_settings == subject().get_settings_defaults()
 
@@ -42,7 +43,7 @@ def test_on_event(mocker):
     plugin.handle_print_done.assert_called_with({})
 
 def test_hostname():
-    assert socket.gethostname() == subject().hostname()
+    assert socket.gethostname() == subject()._hostname
     
 def test_print_cost(mocker):
     plugin = subject()

@@ -12,6 +12,7 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
 
         def __init__(self):
                 self._logger = logging.getLogger("octoprint.plugins.irccat")
+                self._hostname = socket.gethostname()
 
 	def get_settings_defaults(self):
 		return dict(
@@ -19,7 +20,8 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                         port=12345,
                         cost_per_hour=1.50,
                         cost_per_meter=0.2,
-                        currency='£'
+                        currency='GBP',
+                        channel_or_user='#*'
 		)
 
         def get_template_configs(self):
@@ -59,7 +61,7 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 filamentLength = metadata["analysis"]["filament"]["tool0"]["length"]
 
                 total_cost = self.print_cost(printTime) + self.filament_cost(filamentLength)
-                self.send_to_irccat(self.hostname() + ' started printing, estimated print time: ' + self.format_time(printTime) + ', estimated cost: ' + self.format_amount(total_cost))
+                self.send_to_irccat(self._hostname + ' started printing, estimated print time: ' + self.format_time(printTime) + ', estimated cost: ' + self.format_amount(total_cost))
                 
         def handle_print_done(self, payload):
                 metadata = self._file_manager.get_metadata(payload["origin"], payload["file"])
@@ -67,18 +69,13 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 filamentLength = metadata["analysis"]["filament"]["tool0"]["length"]
 
                 total_cost = self.print_cost(printTime) + self.filament_cost(filamentLength)
-                self.send_to_irccat(self.hostname() + ' finished printing, actual print time: ' + self.format_time(printTime) + ', actual cost: ' + self.format_amount(total_cost))
-
-        def hostname(self):
-                if not hasattr(self, '_hostname'):
-                        self._hostname = socket.gethostname()
-                return self._hostname
+                self.send_to_irccat(self._hostname + ' finished printing, actual print time: ' + self.format_time(printTime) + ', actual cost: ' + self.format_amount(total_cost))
 
         def send_to_irccat(self, message):
                 try:
                         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                         s.connect((self._settings.get(["host"]), self._settings.get(["port"])))
-                        s.send("#london-hack-space-dev ", message)
+                        s.send(' '.join([self._settings.get(["channel_or_user"]), message]))
                         s.close()
                 except (socket.error, socket.herror, socket.gaierror, socket.timeout) as e:
                         self._logger.error(repr(e))
@@ -121,7 +118,7 @@ class IrccatPlugin(octoprint.plugin.SettingsPlugin,
                 return ''.join([str(x) for x in output])
 
         def format_amount(self, amount):
-                return self._settings.get(["currency"]) + "%5.2f" % amount
+                return self._settings.get(["currency"]) + "%.2f" % amount
 
 
 
